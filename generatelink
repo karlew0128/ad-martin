@@ -1,0 +1,45 @@
+import React, { useEffect, useState } from "react";
+
+function GenerateLink() {
+    const [link, setLink] = useState('');
+    const [copyStatus, setCopyStatus] = useState('');
+
+    useEffect(() => {
+        try {
+            const user = JSON.parse(localStorage.getItem('user'));
+            const userId = user?.userId ?? user?.userID ?? user?.id ?? user?._id;
+            if (userId !== undefined && userId !== null && userId !== '') {
+                const appUrl = (process.env.REACT_APP_PUBLIC_APP_URL || 'https://ngilo.app').replace(/\/$/, '');
+                setLink(`${appUrl}/send/${encodeURIComponent(String(userId))}`);
+            }
+        } catch {
+            setLink('');
+        }
+    }, []);
+
+    const copyLink = async () => {
+        try {
+            await navigator.clipboard.writeText(link);
+            setCopyStatus('Link copied to clipboard!');
+        } catch {
+            setCopyStatus('Unable to copy automatically. Select and copy the link above.');
+        }
+    };
+
+    return(
+        <section className="generate-link">
+            <h2>Your Unique Link</h2>
+            {link ? (
+                <>
+                    <p className="generated-link">{link}</p>
+                    <button type="button" onClick={copyLink}>Copy Link</button>
+                    {copyStatus && <p role="status">{copyStatus}</p>}
+                </>
+            ) : (
+                <p>Log in to generate your personal link.</p>
+            )}
+        </section>
+    );
+}
+
+export default GenerateLink;
