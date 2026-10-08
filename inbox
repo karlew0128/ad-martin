@@ -1,0 +1,70 @@
+import React, { useCallback, useEffect, useState } from 'react';
+import { API_URL } from '../api';
+
+function Inbox() {
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const loadMessages = useCallback(async () => {
+    let user;
+    try {
+      user = JSON.parse(localStorage.getItem('user') || 'null');
+    } catch {
+      user = null;
+    }
+
+    if (!user?.accessToken) {
+      setError('Please log in again to view your inbox.');
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    try {
+      const response = await fetch(`${API_URL}/api/messages`, {
+        headers: { Authorization: `Bearer ${user.accessToken}` },
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Could not load your messages.');
+      setMessages(Array.isArray(data.messages) ? data.messages : []);
+    } catch (loadError) {
+      setError(loadError.message || 'Could not connect to the inbox.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadMessages();
+  }, [loadMessages, refreshKey]);
+
+  return (
+    <section className="inbox" aria-labelledby="inbox-heading">
+      <div className="inbox-heading">
+        <h2 id="inbox-heading">Your Inbox</h2>
+        <button type="button" onClick={() => setRefreshKey((key) => key + 1)} disabled={loading}>
+          {loading ? 'Refreshing…' : 'Refresh'}
+        </button>
+      </div>
+
+      {loading && <p role="status">Loading messages…</p>}
+      {!loading && error && <p role="alert">{error}</p>}
+      {!loading && !error && messages.length === 0 && <p>No messages yet. Share your link to receive anonymous messages.</p>}
+      {!loading && !error && messages.length > 0 && (
+        <ul className="inbox-list">
+          {messages.map((item) => (
+            <li key={item.messageId} className="inbox-message">
+              <p>{item.message}</p>
+              <time dateTime={item.createdAt}>{new Date(item.createdAt).toLocaleString()}</time>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+export default Inbox;
