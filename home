@@ -1,0 +1,67 @@
+import React, { useEffect, useState } from 'react';
+import GenerateLink from '../components/GenerateLink';
+import Message from '../components/Message';
+import { API_URL } from '../api';
+
+function Home() {
+    const [greeting, setGreeting] = useState('');
+    const [username, setUsername] = useState('User');
+    const [showComponent, setShowComponent] = useState('message');
+
+    useEffect(() => {
+      const hour = new Date().getHours();
+      setGreeting(
+        hour < 12 ? 'Good Morning' : hour < 18 ? 'Good Afternoon': 'Good Evening'
+      );
+
+      let storedUser;
+      try {
+        storedUser = JSON.parse(localStorage.getItem('user'));
+      } catch {
+        storedUser = null;
+      }
+
+      if (storedUser?.username) setUsername(storedUser.username);
+      if (storedUser?.userId) {
+        fetch(`${API_URL}/api/user/${encodeURIComponent(storedUser.userId)}`)
+        .then((res) => {
+          if (!res.ok) throw new Error('Failed to fetch user');
+          return res.json();
+        })
+        .then((data) => {
+          setUsername(data.username);
+          if (data.userId && data.userId !== storedUser.userId) {
+            const updatedUser = { ...storedUser, userId: data.userId };
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+          }
+        })
+        .catch(() => {
+          setUsername(storedUser?.username || 'User');
+        });
+      }
+    }, []);
+
+    return (
+      <main className="home-page">
+        <h1>{greeting}, {username}!</h1>
+        <p className="home-prompt">What would you like to do?</p>
+
+        <div className="home-actions">
+          <button type="button" onClick={() => setShowComponent('message')}>
+            Send Anonymous Message
+          </button>
+
+          <button type="button" onClick={() => setShowComponent('generate')}>
+            Generate Link
+          </button>
+        </div>
+
+        <div className="user-msg">
+          {showComponent === 'generate' && <GenerateLink />}
+          {showComponent === 'message' && <Message />}
+        </div>
+      </main>
+    );
+  }
+
+export default Home;
