@@ -1,0 +1,50 @@
+import { useState } from 'react';
+import axios from 'axios';
+import { Link } from 'react-router-dom';
+import { API_URL } from '../api';
+
+const Register = () => {
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+
+    const handleSignup = async (e) => {
+        e.preventDefault();
+        setError('');
+        setSubmitting(true);
+        try {
+            await axios.post(`${API_URL}/api/register`, { username, password });
+            window.location.assign('/?registered=1');
+        } catch (err){
+            if (!err.response) {
+                setError(`Cannot connect to the signup server at ${API_URL}. Start the backend or set REACT_APP_API_URL to its address.`);
+            } else {
+                const responseMessage = err.response.data?.message || err.response.data;
+                setError(`Signup failed: ${typeof responseMessage === 'string' ? responseMessage : 'Please check your details and try again.'}`);
+            }
+        } finally {
+            setSubmitting(false);
+        }
+    };
+    return(
+        <main className="auth-page">
+                <section className="auth-card">
+                    <h1>Sign Up</h1>
+                    <form onSubmit={handleSignup}>
+                        <label>Username</label>
+                        <input type="text" placeholder="Username" value={username} onChange={e => setUsername(e.target.value)} required />
+                        <label>Password</label>
+                        <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} required />
+                        <button className="auth-submit" type="submit" disabled={submitting}>
+                            {submitting ? 'Creating account…' : 'Sign Up'}
+                        </button>
+                    </form>
+                    {error && <p className="auth-error" role="alert">{error}</p>}
+                    <Link className="auth-link" to="/">Go Back to Log In</Link>
+                </section>
+        </main>
+    )
+}
+
+export default Register
