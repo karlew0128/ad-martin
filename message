@@ -1,0 +1,71 @@
+import React, { useState } from "react";
+import { useParams } from 'react-router-dom';
+import { API_URL } from '../api';
+
+function Message() {
+  const { userId } = useParams();
+  const [link, setLink] = useState('');
+  const [message, setMessage] = useState('');
+  const [status, setStatus] = useState('');
+
+  const handleSend = async () => {
+    setStatus(''); 
+
+    try {
+      const parts = link.trim().split('/send/');
+      const recipientId = userId || parts[1]?.split(/[?#]/)[0];
+
+      if (!recipientId || !message.trim()) {
+        setStatus('Please enter a valid recipient link and a message.');
+        return;
+      }
+
+      const res = await fetch(`${API_URL}/api/send-message`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recipientID: decodeURIComponent(recipientId), message: message.trim() }),
+      });
+
+      const text = await res.text();
+
+      if (!res.ok) {
+        setStatus(`Error: ${text}`);
+        return;
+      }
+
+      setStatus('Message sent anonymously!');
+      setMessage('');
+      setLink('');
+
+    } catch (error) {
+      setStatus('Error sending message. Please try again later.');
+      console.error('Send message error:', error);
+    }
+  };
+
+  return (
+    <section className="message-form">
+      <h2>Send Anonymous Message</h2>
+      {!userId && <input
+        className="message-recipient"
+        type="text"
+        placeholder="Paste recipient's link (e.g., https://ngilo.app/send/abc123)"
+        value={link}
+        onChange={(e) => setLink(e.target.value)}
+      />}
+      <textarea
+        className="message-content"
+        placeholder="Your anonymous message"
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        rows={5}
+      />
+      <button type="button" onClick={handleSend}>
+        Send
+      </button>
+      {status && <p role="status">{status}</p>}
+    </section>
+  );
+}
+
+export default Message;
