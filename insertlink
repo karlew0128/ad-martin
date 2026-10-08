@@ -1,0 +1,50 @@
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+function InsertLink() {
+  const [link, setLink] = useState('');
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    setError('');
+
+    const value = link.trim();
+    const match = value.match(/(?:^|\/)send\/([^/?#]+)\/?(?:[?#].*)?$/i);
+    const id = match?.[1] || ( /^[\w-]+$/.test(value) ? value : '');
+
+    if (!id) {
+      setError('Enter a valid recipient link containing /send/ and the recipient ID.');
+      return;
+    }
+
+    try {
+      navigate(`/send/${encodeURIComponent(decodeURIComponent(id))}`);
+    } catch {
+      setError('That link contains an invalid recipient ID.');
+    }
+  };
+
+  return (
+    <section>
+      <h2>Send an Anonymous Message</h2>
+      <form onSubmit={handleSubmit}>
+        <label htmlFor="recipient-link">Recipient’s link</label>
+        <input
+          id="recipient-link"
+          type="text"
+          value={link}
+          onChange={(event) => setLink(event.target.value)}
+          placeholder="Paste a link like https://example.com/send/abc123"
+          autoComplete="url"
+          required
+        />
+        <button type="submit">Continue</button>
+      </form>
+      {error && <p role="alert">{error}</p>}
+    </section>
+  );
+}
+
+export default InsertLink;
